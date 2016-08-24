@@ -1063,8 +1063,19 @@ func (handler *Handler) enterBusyState(e *fsm.Event, state string) {
 
 			// Create the transaction object
 			chaincodeInvocationSpec := &pb.ChaincodeInvocationSpec{ChaincodeSpec: chaincodeSpec}
-			transaction, _ := pb.NewChaincodeExecute(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_INVOKE)
-
+			//源-begin
+			//transaction, _ := pb.NewChaincodeExecute(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_INVOKE)
+			//源-end
+			//###################################caofei-begin###################################
+			//修改stub.InvokeChaincode()调用内部chaincode获取cert、metadata为空
+			var transaction *pb.Transaction
+			securityContext := msg.GetSecurityContext()
+			if securityContext != nil {
+				transaction, _ = pb.NewChaincodeExecuteUsingCert(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_INVOKE, securityContext.CallerCert, securityContext.Metadata)
+			} else {
+				transaction, _ = pb.NewChaincodeExecute(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_INVOKE)
+			}
+			//###################################caofei-end###################################
 			// Launch the new chaincode if not already running
 			_, chaincodeInput, launchErr := handler.chaincodeSupport.Launch(context.Background(), transaction)
 			if launchErr != nil {
@@ -1341,8 +1352,19 @@ func (handler *Handler) handleQueryChaincode(msg *pb.ChaincodeMessage) {
 
 		// Create the transaction object
 		chaincodeInvocationSpec := &pb.ChaincodeInvocationSpec{ChaincodeSpec: chaincodeSpec}
-		transaction, _ := pb.NewChaincodeExecute(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_QUERY)
-
+		//源-begin
+		//transaction, _ := pb.NewChaincodeExecute(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_QUERY)
+		//源-end
+		//###################################caofei-begin###################################
+		//修改QueryChaincode调用chaincode获取cert、metadata为空，caofei，2016-08-23
+		var transaction *pb.Transaction
+		securityContext := msg.GetSecurityContext()
+		if securityContext != nil {
+			transaction, _ = pb.NewChaincodeExecuteUsingCert(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_QUERY, securityContext.CallerCert, securityContext.Metadata)
+		} else {
+			transaction, _ = pb.NewChaincodeExecute(chaincodeInvocationSpec, msg.Uuid, pb.Transaction_CHAINCODE_QUERY)
+		}
+		//###################################caofei-end###################################
 		// Launch the new chaincode if not already running
 		_, chaincodeInput, launchErr := handler.chaincodeSupport.Launch(context.Background(), transaction)
 		if launchErr != nil {

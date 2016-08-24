@@ -99,6 +99,15 @@ func (m *BlockCount) Reset()         { *m = BlockCount{} }
 func (m *BlockCount) String() string { return proto.CompactTextString(m) }
 func (*BlockCount) ProtoMessage()    {}
 
+// Specifies the block number to be returned from the blockchain.
+type TransactionUUID struct {
+	Uuid string `protobuf:"bytes,1,opt,name=uuid" json:"uuid,omitempty"`
+}
+
+func (m *TransactionUUID) Reset()         { *m = TransactionUUID{} }
+func (m *TransactionUUID) String() string { return proto.CompactTextString(m) }
+func (*TransactionUUID) ProtoMessage()    {}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -118,6 +127,8 @@ type OpenchainClient interface {
 	// GetPeers returns a list of all peer nodes currently connected to the target
 	// peer.
 	GetPeers(ctx context.Context, in *google_protobuf1.Empty, opts ...grpc.CallOption) (*PeersMessage, error)
+
+	GetTransactionByUUID(ctx context.Context, in *TransactionUUID, opts ...grpc.CallOption) (*Transaction, error)
 }
 
 type openchainClient struct {
@@ -164,6 +175,15 @@ func (c *openchainClient) GetPeers(ctx context.Context, in *google_protobuf1.Emp
 	return out, nil
 }
 
+func (c *openchainClient) GetTransactionByUUID(ctx context.Context, in *TransactionUUID, opts ...grpc.CallOption) (*Transaction, error) {
+	out := new(Transaction)
+	err := grpc.Invoke(ctx, "/protos.Openchain/GetTransactionByUUID", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Openchain service
 
 type OpenchainServer interface {
@@ -179,6 +199,8 @@ type OpenchainServer interface {
 	// GetPeers returns a list of all peer nodes currently connected to the target
 	// peer.
 	GetPeers(context.Context, *google_protobuf1.Empty) (*PeersMessage, error)
+
+	GetTransactionByUUID(context.Context, *TransactionUUID) (*Transaction, error)
 }
 
 func RegisterOpenchainServer(s *grpc.Server, srv OpenchainServer) {
@@ -233,6 +255,18 @@ func _Openchain_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(
 	return out, nil
 }
 
+func _Openchain_GetTransactionByUUID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(TransactionUUID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(OpenchainServer).GetTransactionByUUID(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Openchain_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "protos.Openchain",
 	HandlerType: (*OpenchainServer)(nil),
@@ -252,6 +286,10 @@ var _Openchain_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPeers",
 			Handler:    _Openchain_GetPeers_Handler,
+		},
+		{
+			MethodName: "GetTransactionByUUID",
+			Handler:    _Openchain_GetTransactionByUUID_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},

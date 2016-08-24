@@ -16,7 +16,6 @@ tags
 .#*
 # bddtest log files
 *.log
-*.out
 # bddtest coverage files
 bddtests/coverage
 *.cov
@@ -26,3 +25,6 @@ bddtests/coverage
 go-carpet-coverage*
 # make node-sdk copied files
 sdk/node/lib/protos/*
+membersrvc
+/ca/.ca
+/ca/test

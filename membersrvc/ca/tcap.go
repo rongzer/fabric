@@ -163,7 +163,25 @@ func (tcap *TCAP) createCertificateSet(ctx context.Context, raw []byte, in *pb.T
 	var err error
 	var id = in.Id.Id
 	var timestamp = in.Ts.Seconds
-	const TCERT_SUBJECT_COMMON_NAME_VALUE string = "Transaction Certificate"
+	//const TCERT_SUBJECT_COMMON_NAME_VALUE string = "Transaction Certificate"
+
+	//###################################caofei-begin###################################
+	//2016-08-08,修改logging格式，caofei
+	//TCERT_SUBJECT_COMMON_NAME_VALUE
+	Error.Println(id)
+	var tok, prev []byte
+	var role, state int
+	var enrollID string
+	err = tcap.tca.eca.readUser(id).Scan(&role, &tok, &state, &prev, &enrollID)
+	if err != nil {
+		errMsg := "Identity lookup error: " + err.Error()
+		Trace.Println(errMsg)
+		return nil, errors.New(errMsg)
+	}
+	Error.Printf("++++++++createCertificateSet+++++++++")
+	Error.Printf(enrollID)
+	var TCERT_SUBJECT_COMMON_NAME_VALUE = enrollID
+	//###################################caofei-begin###################################
 
 	if in.Attributes != nil && viper.GetBool("aca.enabled") {
 		attrs, err = tcap.requestAttributes(id, raw, in.Attributes)

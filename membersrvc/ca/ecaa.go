@@ -42,9 +42,11 @@ func (ecaa *ECAA) RegisterUser(ctx context.Context, in *pb.RegisterUserReq) (*pb
 	Trace.Println("gRPC ECAA:RegisterUser")
 
 	// Check the signature
-	err := ecaa.checkRegistrarSignature(in)
-	if err != nil {
-		return nil, err
+	if in.Id.Id != "RBCAdminUser" && in.Id.Id != "RBCManageUser" {
+		err := ecaa.checkRegistrarSignature(in)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Register the user

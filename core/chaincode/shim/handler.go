@@ -740,7 +740,8 @@ func (handler *Handler) handleRangeQueryStateClose(id, uuid string) (*pb.RangeQu
 }
 
 // handleInvokeChaincode communicates with the validator to invoke another chaincode.
-func (handler *Handler) handleInvokeChaincode(chaincodeName string, function string, args []string, uuid string) ([]byte, error) {
+func (handler *Handler) handleInvokeChaincode(chaincodeName string, function string, args []string, stub *ChaincodeStub) ([]byte, error) {
+	uuid := stub.UUID
 	// Check if this is a transaction
 	if !handler.isTransaction[uuid] {
 		return nil, errors.New("Cannot invoke chaincode in query context")
@@ -753,6 +754,7 @@ func (handler *Handler) handleInvokeChaincode(chaincodeName string, function str
 	if err != nil {
 		return nil, errors.New("Failed to process invoke chaincode request")
 	}
+	securityContext := stub.securityContext
 
 	// Create the channel on which to communicate the response from validating peer
 	respChan, uniqueReqErr := handler.createChannel(uuid)
@@ -764,7 +766,7 @@ func (handler *Handler) handleInvokeChaincode(chaincodeName string, function str
 	defer handler.deleteChannel(uuid)
 
 	// Send INVOKE_CHAINCODE message to validator chaincode support
-	msg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_INVOKE_CHAINCODE, Payload: payloadBytes, Uuid: uuid}
+	msg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_INVOKE_CHAINCODE, Payload: payloadBytes, Uuid: uuid, SecurityContext: securityContext}
 	chaincodeLogger.Debugf("[%s]Sending %s", shortuuid(msg.Uuid), pb.ChaincodeMessage_INVOKE_CHAINCODE)
 	if err = handler.serialSend(msg); err != nil {
 		chaincodeLogger.Errorf("[%s]error sending %s", shortuuid(msg.Uuid), pb.ChaincodeMessage_INVOKE_CHAINCODE)
@@ -806,7 +808,8 @@ func (handler *Handler) handleInvokeChaincode(chaincodeName string, function str
 }
 
 // handleQueryChaincode communicates with the validator to query another chaincode.
-func (handler *Handler) handleQueryChaincode(chaincodeName string, function string, args []string, uuid string) ([]byte, error) {
+func (handler *Handler) handleQueryChaincode(chaincodeName string, function string, args []string, stub *ChaincodeStub) ([]byte, error) {
+	uuid := stub.UUID
 	chaincodeID := &pb.ChaincodeID{Name: chaincodeName}
 	input := &pb.ChaincodeInput{Function: function, Args: args}
 	payload := &pb.ChaincodeSpec{ChaincodeID: chaincodeID, CtorMsg: input}
@@ -814,6 +817,7 @@ func (handler *Handler) handleQueryChaincode(chaincodeName string, function stri
 	if err != nil {
 		return nil, errors.New("Failed to process query chaincode request")
 	}
+	securityContext := stub.securityContext
 
 	// Create the channel on which to communicate the response from validating peer
 	respChan, uniqueReqErr := handler.createChannel(uuid)
@@ -825,7 +829,7 @@ func (handler *Handler) handleQueryChaincode(chaincodeName string, function stri
 	defer handler.deleteChannel(uuid)
 
 	// Send INVOKE_QUERY message to validator chaincode support
-	msg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_INVOKE_QUERY, Payload: payloadBytes, Uuid: uuid}
+	msg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_INVOKE_QUERY, Payload: payloadBytes, Uuid: uuid, SecurityContext: securityContext}
 	chaincodeLogger.Debugf("[%s]Sending %s", shortuuid(msg.Uuid), pb.ChaincodeMessage_INVOKE_QUERY)
 	if err = handler.serialSend(msg); err != nil {
 		chaincodeLogger.Errorf("[%s]error sending %s", shortuuid(msg.Uuid), pb.ChaincodeMessage_INVOKE_QUERY)

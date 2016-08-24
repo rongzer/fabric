@@ -695,7 +695,7 @@ func (s *ServerOpenchainREST) GetTransactionByUUID(rw web.ResponseWriter, req *w
 	txUUID := req.PathParams["uuid"]
 
 	// Retrieve the transaction matching the UUID
-	tx, err := s.server.GetTransactionByUUID(context.Background(), txUUID)
+	tx, err := s.server.GetTransactionByUUID(context.Background(), &pb.TransactionUUID{Uuid: txUUID})
 
 	encoder := json.NewEncoder(rw)
 

@@ -111,3 +111,25 @@ func NewChaincodeExecute(chaincodeInvocationSpec *ChaincodeInvocationSpec, uuid 
 	transaction.Payload = data
 	return transaction, nil
 }
+func NewChaincodeExecuteUsingCert(chaincodeInvocationSpec *ChaincodeInvocationSpec, uuid string, typ Transaction_Type, cert, metadata []byte) (*Transaction, error) {
+	transaction := new(Transaction)
+	transaction.Type = typ
+	transaction.Uuid = uuid
+	transaction.Timestamp = util.CreateUtcTimestamp()
+	cID := chaincodeInvocationSpec.ChaincodeSpec.GetChaincodeID()
+	if cID != nil {
+		data, err := proto.Marshal(cID)
+		if err != nil {
+			return nil, fmt.Errorf("Could not marshal chaincode : %s", err)
+		}
+		transaction.ChaincodeID = data
+	}
+	data, err := proto.Marshal(chaincodeInvocationSpec)
+	if err != nil {
+		return nil, fmt.Errorf("Could not marshal payload for chaincode invocation: %s", err)
+	}
+	transaction.Payload = data
+	transaction.Cert = cert
+	transaction.Metadata = metadata
+	return transaction, nil
+}

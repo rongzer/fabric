@@ -23,6 +23,8 @@ package main
 //hard-coding.
 
 import (
+	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -77,10 +79,32 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return t.delete(stub, args)
 	}
 
+	fmt.Println("stub.UUID", stub.UUID)
+
+	b, _ := stub.GetState(stub.UUID)
+	if len(b) != 0 {
+		return nil, errors.New("the uuid transaction alredy invoked")
+	} else {
+		stub.PutState(stub.UUID, []byte("ok"))
+	}
+
 	var A, B string    // Entities
 	var Aval, Bval int // Asset holdings
 	var X int          // Transaction value
 	var err error
+
+	b2, _ := stub.GetCallerCertificate()
+	fmt.Println("cert", hex.EncodeToString(b2))
+	cert, err := x509.ParseCertificate(b2)
+	if err != nil {
+		fmt.Println(err)
+		//return nil, err
+	}
+	if cert != nil {
+		fmt.Println(cert.Subject.CommonName)
+	} else {
+		fmt.Println("========cert is nil=========")
+	}
 
 	if len(args) != 3 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 3")
@@ -151,8 +175,19 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 	if function != "query" {
 		return nil, errors.New("Invalid query function name. Expecting \"query\"")
 	}
+	b2, _ := stub.GetCallerCertificate()
+	fmt.Println("cert", hex.EncodeToString(b2))
+	cert, err := x509.ParseCertificate(b2)
+	if err != nil {
+		fmt.Println(err)
+		//return nil, err
+	}
+	if cert != nil {
+		fmt.Println(cert.Subject.CommonName)
+	} else {
+		fmt.Println("========cert is nil=========")
+	}
 	var A string // Entities
-	var err error
 
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the person to query")

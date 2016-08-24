@@ -59,6 +59,8 @@ eca:
                   - bank_c
               institutions:
                   - institution_a
+                  - business
+                  - customer
         users:
                 #
                 # The fields of each user are as follows:
@@ -90,6 +92,11 @@ eca:
                 jim: 1 6avZQLwcUe9b bank_a 00004
                 binhn: 1 7avZQLwcUe9q institution_a 00005
 
+                kfc: 1 kfc business 00002
+                cmcc: 1 cmcc business 00002
+                cus1: 1 cus1 customer 00002
+                cus2: 1 cus2 customer 00002
+
                 # Users for asset transfer with roles test located at
                 # sdk/node/test/unit/asset-mgmt-with-roles.js
                 alice: 1 CMS10pEQlB16 bank_a 00006
@@ -108,12 +115,6 @@ eca:
                 test_vp7: 4 twoKZouEyLyB
                 test_vp8: 4 BxP7QNh778gI
                 test_vp9: 4 wu3F1EwJWHvQ
-
-# Uncomment this section to activate devnet setup as specficied in
-# devnet-setup.md
-#
-#               vp0: 4 vp0_secret
-#               vp1: 4 vp1_secret
 
                 test_user0: 1 MS9qrN8hFjlE bank_a        00001
                 test_user1: 1 jGlNl6ImkuDo institution_a 00007
