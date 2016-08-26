@@ -126,6 +126,20 @@ func (s *ServerOpenchain) GetBlockByNumber(ctx context.Context, num *pb.BlockNum
 	return block, nil
 }
 
+//rongzer
+func (s *ServerOpenchain) GetBlockNumByUUID(ctx context.Context, txUUID string) (uint64, error) {
+	blockNum, err := s.ledger.GetBlockNumByUUID(txUUID)
+	if err != nil {
+		switch err {
+		case ledger.ErrResourceNotFound:
+			return 0, ErrNotFound
+		default:
+			return 0, fmt.Errorf("Error retrieving height from blockchain: %s", err)
+		}
+	}
+	return blockNum, nil
+}
+
 // GetBlockCount returns the current number of blocks in the blockchain data
 // structure.
 func (s *ServerOpenchain) GetBlockCount(ctx context.Context, e *google_protobuf.Empty) (*pb.BlockCount, error) {
@@ -148,20 +162,7 @@ func (s *ServerOpenchain) GetState(ctx context.Context, chaincodeID, key string)
 	return s.ledger.GetState(chaincodeID, key, true)
 }
 
-//// GetTransactionByUUID returns a transaction matching the specified UUID
-//func (s *ServerOpenchain) GetTransactionByUUID(ctx context.Context, txUUID string) (*pb.Transaction, error) {
-//	transaction, err := s.ledger.GetTransactionByUUID(txUUID)
-//	if err != nil {
-//		switch err {
-//		case ledger.ErrResourceNotFound:
-//			return nil, ErrNotFound
-//		default:
-//			return nil, fmt.Errorf("Error retrieving transaction from blockchain: %s", err)
-//		}
-//	}
-//	return transaction, nil
-//}
-
+// GetTransactionByUUID returns a transaction matching the specified UUID
 func (s *ServerOpenchain) GetTransactionByUUID(ctx context.Context, txUUID *pb.TransactionUUID) (*pb.Transaction, error) {
 	transaction, err := s.ledger.GetTransactionByUUID(txUUID.Uuid)
 	if err != nil {

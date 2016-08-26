@@ -37,6 +37,7 @@ import (
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 
+	"github.com/golang/protobuf/proto"
 	core "github.com/hyperledger/fabric/core"
 	"github.com/hyperledger/fabric/core/chaincode"
 	"github.com/hyperledger/fabric/core/comm"
@@ -689,6 +690,189 @@ func (s *ServerOpenchainREST) GetBlockByNumber(rw web.ResponseWriter, req *web.R
 	encoder.Encode(block)
 }
 
+//rongzer
+func (s *ServerOpenchainREST) GetRZBlock(rw web.ResponseWriter, req *web.Request) {
+	id := req.PathParams["id"]
+
+	_, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		s.GetRZBlockByUuid(rw, req)
+	} else {
+		s.GetRZBlockByNumber(rw, req)
+	}
+}
+
+//rongzer
+func (s *ServerOpenchainREST) GetRZBlockByNumber(rw web.ResponseWriter, req *web.Request) {
+	// Parse out the Block id
+	blockNumber, err := strconv.ParseUint(req.PathParams["id"], 10, 64)
+
+	encoder := json.NewEncoder(rw)
+
+	// Check for proper Block id syntax
+	if err != nil {
+		// Failure
+		rw.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(restResult{Error: "Block id must be an integer (uint64)."})
+		return
+	}
+
+	// Retrieve Block from blockchain
+	block, err := s.server.GetBlockByNumber(context.Background(), &pb.BlockNumber{Number: blockNumber})
+
+	if (err == ErrNotFound) || (err == nil && block == nil) {
+		rw.WriteHeader(http.StatusNotFound)
+		encoder.Encode(restResult{Error: ErrNotFound.Error()})
+		return
+	}
+
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(restResult{Error: err.Error()})
+		return
+	}
+
+	rzblock := new(pb.RZBlock)
+	rzblock.Version = block.Version
+	rzblock.Timestamp = block.Timestamp
+	rzblock.Version = block.Version
+
+	rzblock.Transactions = make([]*pb.RZTransaction, 0)
+	for _, t := range block.Transactions {
+		rt := new(pb.RZTransaction)
+		rt.Type = t.Type
+
+		proto.Unmarshal(t.ChaincodeID, &rt.ChaincodeID)
+		proto.Unmarshal(t.Payload, &rt.Payload)
+
+		rt.Metadata = t.Metadata
+		rt.Uuid = t.Uuid
+		rt.Timestamp = t.Timestamp
+		rt.ConfidentialityLevel = t.ConfidentialityLevel
+		rt.ConfidentialityProtocolVersion = t.ConfidentialityProtocolVersion
+		rt.Nonce = t.Nonce
+		rt.ToValidators = t.ToValidators
+		rt.Cert = t.Cert
+		rt.Signature = t.Signature
+
+		rzblock.Transactions = append(rzblock.Transactions, rt)
+	}
+
+	rzblock.StateHash = block.StateHash
+	rzblock.PreviousBlockHash = block.PreviousBlockHash
+	rzblock.ConsensusMetadata = block.ConsensusMetadata
+	rzblock.NonHashData = block.NonHashData
+
+	// Success
+	rw.WriteHeader(http.StatusOK)
+	encoder.Encode(rzblock)
+	restLogger.Info(fmt.Sprintf("Successfully retrieved rzblock by id: %s", blockNumber))
+}
+
+// rongzer
+func (s *ServerOpenchainREST) GetRZBlockByUuid(rw web.ResponseWriter, req *web.Request) {
+	txUUID := req.PathParams["id"]
+
+	blockNumber, err := s.server.GetBlockNumByUUID(context.Background(), txUUID)
+
+	encoder := json.NewEncoder(rw)
+
+	// Check for error
+	if (err == ErrNotFound) || (err == nil && blockNumber == 0) {
+		rw.WriteHeader(http.StatusNotFound)
+		encoder.Encode(restResult{Error: ErrNotFound.Error()})
+		return
+	}
+
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(restResult{Error: err.Error()})
+		return
+	}
+
+	// Retrieve Block from blockchain
+	block, err := s.server.GetBlockByNumber(context.Background(), &pb.BlockNumber{Number: blockNumber})
+
+	// Check for error
+	if (err == ErrNotFound) || (err == nil && blockNumber == 0) {
+		rw.WriteHeader(http.StatusNotFound)
+		encoder.Encode(restResult{Error: ErrNotFound.Error()})
+		return
+	}
+
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(restResult{Error: err.Error()})
+		return
+	}
+
+	rzblock := new(pb.RZBlock)
+	rzblock.Version = block.Version
+	rzblock.Timestamp = block.Timestamp
+	rzblock.Version = block.Version
+
+	rzblock.Transactions = make([]*pb.RZTransaction, 0)
+	for _, t := range block.Transactions {
+		rt := new(pb.RZTransaction)
+		rt.Type = t.Type
+
+		proto.Unmarshal(t.ChaincodeID, &rt.ChaincodeID)
+		proto.Unmarshal(t.Payload, &rt.Payload)
+
+		rt.Metadata = t.Metadata
+		rt.Uuid = t.Uuid
+		rt.Timestamp = t.Timestamp
+		rt.ConfidentialityLevel = t.ConfidentialityLevel
+		rt.ConfidentialityProtocolVersion = t.ConfidentialityProtocolVersion
+		rt.Nonce = t.Nonce
+		rt.ToValidators = t.ToValidators
+		rt.Cert = t.Cert
+		rt.Signature = t.Signature
+
+		rzblock.Transactions = append(rzblock.Transactions, rt)
+	}
+
+	rzblock.StateHash = block.StateHash
+	rzblock.PreviousBlockHash = block.PreviousBlockHash
+	rzblock.ConsensusMetadata = block.ConsensusMetadata
+	rzblock.NonHashData = block.NonHashData
+
+	// Success
+	rw.WriteHeader(http.StatusOK)
+	encoder.Encode(rzblock)
+	restLogger.Info(fmt.Sprintf("Successfully retrieved rzblock by uuid: %s", txUUID))
+}
+
+//rongzer
+func (s *ServerOpenchainREST) GetBlockNumByUUID(rw web.ResponseWriter, req *web.Request) {
+	// Parse out the transaction UUID
+	txUUID := req.PathParams["uuid"]
+
+	// Retrieve the transaction matching the UUID
+	blockNum, err := s.server.GetBlockNumByUUID(context.Background(), txUUID)
+
+	encoder := json.NewEncoder(rw)
+
+	// Check for error
+	if (err == ErrNotFound) || (err == nil && blockNum == 0) {
+		rw.WriteHeader(http.StatusNotFound)
+		encoder.Encode(restResult{Error: ErrNotFound.Error()})
+		return
+	}
+
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(restResult{Error: err.Error()})
+		return
+	}
+
+	// Return existing transaction
+	rw.WriteHeader(http.StatusOK)
+	encoder.Encode(blockNum)
+	restLogger.Info(fmt.Sprintf("Successfully retrieved blockNum by uuid: %s", txUUID))
+
+}
+
 // GetTransactionByUUID returns a transaction matching the specified UUID
 func (s *ServerOpenchainREST) GetTransactionByUUID(rw web.ResponseWriter, req *web.Request) {
 	// Parse out the transaction UUID
@@ -714,6 +898,52 @@ func (s *ServerOpenchainREST) GetTransactionByUUID(rw web.ResponseWriter, req *w
 		// Return existing transaction
 		rw.WriteHeader(http.StatusOK)
 		encoder.Encode(tx)
+		restLogger.Infof("Successfully retrieved transaction: %s", txUUID)
+	}
+}
+
+// rongzer
+func (s *ServerOpenchainREST) GetRZTransactionByUUID(rw web.ResponseWriter, req *web.Request) {
+	// Parse out the transaction UUID
+	txUUID := req.PathParams["uuid"]
+
+	// Retrieve the transaction matching the UUID
+	t, err := s.server.GetTransactionByUUID(context.Background(), &pb.TransactionUUID{Uuid: txUUID})
+
+	encoder := json.NewEncoder(rw)
+
+	// Check for Error
+	if err != nil {
+		switch err {
+		case ErrNotFound:
+			rw.WriteHeader(http.StatusNotFound)
+			encoder.Encode(restResult{Error: fmt.Sprintf("Transaction %s is not found.", txUUID)})
+		default:
+			rw.WriteHeader(http.StatusInternalServerError)
+			encoder.Encode(restResult{Error: fmt.Sprintf("Error retrieving transaction %s: %s.", txUUID, err)})
+			restLogger.Errorf("Error retrieving transaction %s: %s", txUUID, err)
+		}
+	} else {
+		// Return existing transaction
+		// Return existing transaction
+		rt := new(pb.RZTransaction)
+		rt.Type = t.Type
+
+		proto.Unmarshal(t.ChaincodeID, &rt.ChaincodeID)
+		proto.Unmarshal(t.Payload, &rt.Payload)
+
+		rt.Metadata = t.Metadata
+		rt.Uuid = t.Uuid
+		rt.Timestamp = t.Timestamp
+		rt.ConfidentialityLevel = t.ConfidentialityLevel
+		rt.ConfidentialityProtocolVersion = t.ConfidentialityProtocolVersion
+		rt.Nonce = t.Nonce
+		rt.ToValidators = t.ToValidators
+		rt.Cert = t.Cert
+		rt.Signature = t.Signature
+
+		rw.WriteHeader(http.StatusOK)
+		encoder.Encode(rt)
 		restLogger.Infof("Successfully retrieved transaction: %s", txUUID)
 	}
 }
@@ -1732,6 +1962,13 @@ func buildOpenchainRESTRouter() *web.Router {
 
 	router.Get("/chain", (*ServerOpenchainREST).GetBlockchainInfo)
 	router.Get("/chain/blocks/:id", (*ServerOpenchainREST).GetBlockByNumber)
+
+	//rongzer api
+	router.Get("/chain/rzblocks/id/:id", (*ServerOpenchainREST).GetRZBlockByNumber)
+	router.Get("/chain/rzblocks/uuid/:id", (*ServerOpenchainREST).GetRZBlockByUuid)
+	router.Get("/chain/rzblocks/:id", (*ServerOpenchainREST).GetRZBlock)
+	router.Get("/chain/rzblocknum/:uuid", (*ServerOpenchainREST).GetBlockNumByUUID)
+	router.Get("/rztransactions/:uuid", (*ServerOpenchainREST).GetRZTransactionByUUID)
 
 	// The /devops endpoint is now considered deprecated and superseded by the /chaincode endpoint
 	router.Post("/devops/deploy", (*ServerOpenchainREST).Deploy)

@@ -383,6 +383,11 @@ func (ledger *Ledger) GetTransactionByUUID(txUUID string) (*protos.Transaction, 
 	return ledger.blockchain.getTransactionByUUID(txUUID)
 }
 
+//rongzer
+func (ledger *Ledger) GetBlockNumByUUID(txUUID string) (uint64, error) {
+	return ledger.blockchain.getBlockNumByUUID(txUUID)
+}
+
 // PutRawBlock puts a raw block on the chain. This function should only be
 // used for synchronization between peers.
 func (ledger *Ledger) PutRawBlock(block *protos.Block, blockNumber uint64) error {

@@ -192,6 +192,36 @@ func (m *Transaction) GetTimestamp() *google_protobuf.Timestamp {
 	return nil
 }
 
+type RZTransaction struct {
+	Type Transaction_Type `protobuf:"varint,1,opt,name=type,enum=protos.Transaction_Type" json:"type,omitempty"`
+	// store ChaincodeID as bytes so its encrypted value can be stored
+	ChaincodeID                    ChaincodeID                `protobuf:"bytes,2,opt,name=chaincodeID,proto3" json:"chaincodeID,omitempty"`
+	Payload                        RZChaincodeSpec            `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	Metadata                       []byte                     `protobuf:"bytes,4,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Uuid                           string                     `protobuf:"bytes,5,opt,name=uuid" json:"uuid,omitempty"`
+	Timestamp                      *google_protobuf.Timestamp `protobuf:"bytes,6,opt,name=timestamp" json:"timestamp,omitempty"`
+	ConfidentialityLevel           ConfidentialityLevel       `protobuf:"varint,7,opt,name=confidentialityLevel,enum=protos.ConfidentialityLevel" json:"confidentialityLevel,omitempty"`
+	ConfidentialityProtocolVersion string                     `protobuf:"bytes,8,opt,name=confidentialityProtocolVersion" json:"confidentialityProtocolVersion,omitempty"`
+	Nonce                          []byte                     `protobuf:"bytes,9,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	ToValidators                   []byte                     `protobuf:"bytes,10,opt,name=toValidators,proto3" json:"toValidators,omitempty"`
+	Cert                           []byte                     `protobuf:"bytes,11,opt,name=cert,proto3" json:"cert,omitempty"`
+	Signature                      []byte                     `protobuf:"bytes,12,opt,name=signature,proto3" json:"signature,omitempty"`
+}
+type RZChaincodeSpec struct {
+	ChaincodeSpec *ChaincodeSpec `protobuf:"bytes,1,opt,name=chaincodeSpec" json:"chaincodeSpec,omitempty"`
+}
+
+func (m *RZChaincodeSpec) Reset()         { *m = RZChaincodeSpec{} }
+func (m *RZChaincodeSpec) String() string { return proto.CompactTextString(m) }
+func (*RZChaincodeSpec) ProtoMessage()    {}
+
+func (m *RZChaincodeSpec) GetChaincodeSpec() *ChaincodeSpec {
+	if m != nil {
+		return m.ChaincodeSpec
+	}
+	return nil
+}
+
 // TransactionBlock carries a batch of transactions.
 type TransactionBlock struct {
 	Transactions []*Transaction `protobuf:"bytes,1,rep,name=transactions" json:"transactions,omitempty"`
@@ -250,6 +280,15 @@ type Block struct {
 	Version           uint32                     `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
 	Timestamp         *google_protobuf.Timestamp `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
 	Transactions      []*Transaction             `protobuf:"bytes,3,rep,name=transactions" json:"transactions,omitempty"`
+	StateHash         []byte                     `protobuf:"bytes,4,opt,name=stateHash,proto3" json:"stateHash,omitempty"`
+	PreviousBlockHash []byte                     `protobuf:"bytes,5,opt,name=previousBlockHash,proto3" json:"previousBlockHash,omitempty"`
+	ConsensusMetadata []byte                     `protobuf:"bytes,6,opt,name=consensusMetadata,proto3" json:"consensusMetadata,omitempty"`
+	NonHashData       *NonHashData               `protobuf:"bytes,7,opt,name=nonHashData" json:"nonHashData,omitempty"`
+}
+type RZBlock struct {
+	Version           uint32                     `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
+	Timestamp         *google_protobuf.Timestamp `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
+	Transactions      []*RZTransaction           `protobuf:"bytes,3,rep,name=transactions" json:"transactions,omitempty"`
 	StateHash         []byte                     `protobuf:"bytes,4,opt,name=stateHash,proto3" json:"stateHash,omitempty"`
 	PreviousBlockHash []byte                     `protobuf:"bytes,5,opt,name=previousBlockHash,proto3" json:"previousBlockHash,omitempty"`
 	ConsensusMetadata []byte                     `protobuf:"bytes,6,opt,name=consensusMetadata,proto3" json:"consensusMetadata,omitempty"`

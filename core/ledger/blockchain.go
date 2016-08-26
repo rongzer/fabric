@@ -108,6 +108,16 @@ func (blockchain *blockchain) getBlockByHash(blockHash []byte) (*protos.Block, e
 	return blockchain.getBlock(blockNumber)
 }
 
+//rongzer
+func (blockchain *blockchain) getBlockNumByUUID(txUUID string) (uint64, error) {
+	blockNumber, _, err := blockchain.indexer.fetchTransactionIndexByUUID(txUUID)
+	if err != nil {
+		return 0, err
+	}
+
+	return blockNumber, nil
+}
+
 func (blockchain *blockchain) getTransactionByUUID(txUUID string) (*protos.Transaction, error) {
 	blockNumber, txIndex, err := blockchain.indexer.fetchTransactionIndexByUUID(txUUID)
 	if err != nil {
