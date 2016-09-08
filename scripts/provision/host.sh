@@ -38,8 +38,8 @@ apt-get install --yes tcl tclx tcllib
 apt-get install --yes npm
 
 # Install JDK 1.8 for Java chaincode development
-add-apt-repository ppa:openjdk-r/ppa -y
-apt-get update && apt-get install openjdk-8-jdk -y
+#add-apt-repository ppa:openjdk-r/ppa -y
+#apt-get update && apt-get install openjdk-8-jdk -y
 
 # Download Gradle and create sym link
 wget https://services.gradle.org/distributions/gradle-2.12-bin.zip -P /tmp --quiet
