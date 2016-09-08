@@ -766,7 +766,7 @@ func (s *ServerOpenchainREST) GetRZBlockByNumber(rw web.ResponseWriter, req *web
 	// Success
 	rw.WriteHeader(http.StatusOK)
 	encoder.Encode(rzblock)
-	restLogger.Info(fmt.Sprintf("Successfully retrieved rzblock by id: %s", blockNumber))
+	restLogger.Info(fmt.Sprintf("Successfully retrieved rzblock by id: %v", blockNumber))
 }
 
 // rongzer
