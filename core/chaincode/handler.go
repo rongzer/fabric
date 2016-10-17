@@ -389,9 +389,11 @@ func newChaincodeSupportHandler(chaincodeSupport *ChaincodeSupport, peerChatStre
 			{Name: pb.ChaincodeMessage_INIT.String(), Src: []string{establishedstate}, Dst: initstate},
 			{Name: pb.ChaincodeMessage_READY.String(), Src: []string{establishedstate}, Dst: readystate},
 			{Name: pb.ChaincodeMessage_TRANSACTION.String(), Src: []string{readystate}, Dst: transactionstate},
+			{Name: pb.ChaincodeMessage_COPY_STATE.String(), Src: []string{transactionstate}, Dst: busyxactstate},
 			{Name: pb.ChaincodeMessage_PUT_STATE.String(), Src: []string{transactionstate}, Dst: busyxactstate},
 			{Name: pb.ChaincodeMessage_DEL_STATE.String(), Src: []string{transactionstate}, Dst: busyxactstate},
 			{Name: pb.ChaincodeMessage_INVOKE_CHAINCODE.String(), Src: []string{transactionstate}, Dst: busyxactstate},
+			{Name: pb.ChaincodeMessage_COPY_STATE.String(), Src: []string{initstate}, Dst: busyinitstate},
 			{Name: pb.ChaincodeMessage_PUT_STATE.String(), Src: []string{initstate}, Dst: busyinitstate},
 			{Name: pb.ChaincodeMessage_DEL_STATE.String(), Src: []string{initstate}, Dst: busyinitstate},
 			{Name: pb.ChaincodeMessage_INVOKE_CHAINCODE.String(), Src: []string{initstate}, Dst: busyinitstate},
@@ -1044,6 +1046,20 @@ func (handler *Handler) enterBusyState(e *fsm.Event, state string) {
 			// Invoke ledger to delete state
 			key := string(msg.Payload)
 			err = ledgerObj.DeleteState(chaincodeID, key)
+		} else if msg.Type.String() == pb.ChaincodeMessage_COPY_STATE.String() {
+			copyStateInfo := &pb.CopyStateInfo{}
+			unmarshalErr := proto.Unmarshal(msg.Payload, copyStateInfo)
+			if unmarshalErr != nil {
+				payload := []byte(unmarshalErr.Error())
+				chaincodeLogger.Errorf("[%s]Unable to decipher payload. Sending %s", shortuuid(msg.Uuid), pb.ChaincodeMessage_ERROR)
+				triggerNextStateMsg = &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_ERROR, Payload: payload, Uuid: msg.Uuid}
+				return
+			}
+			chaincodeLogger.Infof("Source", copyStateInfo.Source)
+			chaincodeLogger.Infof("Dest", copyStateInfo.Dest)
+			// copy state
+			err = ledgerObj.CopyState(copyStateInfo.Source, copyStateInfo.Dest)
+
 		} else if msg.Type.String() == pb.ChaincodeMessage_INVOKE_CHAINCODE.String() {
 			//check and prohibit C-call-C for CONFIDENTIAL txs
 			if triggerNextStateMsg = handler.canCallChaincode(msg.Uuid); triggerNextStateMsg != nil {
@@ -1435,7 +1451,7 @@ func (handler *Handler) HandleMessage(msg *pb.ChaincodeMessage) error {
 	}
 	if handler.FSM.Cannot(msg.Type.String()) {
 		// Check if this is a request from validator in query context
-		if msg.Type.String() == pb.ChaincodeMessage_PUT_STATE.String() || msg.Type.String() == pb.ChaincodeMessage_DEL_STATE.String() || msg.Type.String() == pb.ChaincodeMessage_INVOKE_CHAINCODE.String() {
+		if msg.Type.String() == pb.ChaincodeMessage_COPY_STATE.String() || msg.Type.String() == pb.ChaincodeMessage_PUT_STATE.String() || msg.Type.String() == pb.ChaincodeMessage_DEL_STATE.String() || msg.Type.String() == pb.ChaincodeMessage_INVOKE_CHAINCODE.String() {
 			// Check if this UUID is a transaction
 			if !handler.getIsTransaction(msg.Uuid) {
 				payload := []byte(fmt.Sprintf("[%s]Cannot handle %s in query context", msg.Uuid, msg.Type.String()))

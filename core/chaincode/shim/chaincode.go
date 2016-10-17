@@ -295,6 +295,11 @@ func (stub *ChaincodeStub) DelState(key string) error {
 	return handler.handleDelState(key, stub.UUID)
 }
 
+// CopyState copies all the key-values from sourceChaincodeID to destChaincodeID
+func (stub *ChaincodeStub) CopyState(sourceChaincodeID, destChaincodeID string) error {
+	return handler.handleCopyState(sourceChaincodeID, destChaincodeID, stub.UUID)
+}
+
 //ReadCertAttribute is used to read an specific attribute from the transaction certificate, *attributeName* is passed as input parameter to this function.
 // Example:
 //  attrValue,error:=stub.ReadCertAttribute("position")

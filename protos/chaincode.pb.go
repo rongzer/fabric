@@ -113,6 +113,7 @@ const (
 	ChaincodeMessage_RANGE_QUERY_STATE_NEXT  ChaincodeMessage_Type = 18
 	ChaincodeMessage_RANGE_QUERY_STATE_CLOSE ChaincodeMessage_Type = 19
 	ChaincodeMessage_KEEPALIVE               ChaincodeMessage_Type = 20
+	ChaincodeMessage_COPY_STATE              ChaincodeMessage_Type = 21
 )
 
 var ChaincodeMessage_Type_name = map[int32]string{
@@ -348,6 +349,15 @@ type PutStateInfo struct {
 func (m *PutStateInfo) Reset()         { *m = PutStateInfo{} }
 func (m *PutStateInfo) String() string { return proto.CompactTextString(m) }
 func (*PutStateInfo) ProtoMessage()    {}
+
+type CopyStateInfo struct {
+	Source string `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Dest   string `protobuf:"bytes,2,opt,name=dest" json:"dest,omitempty"`
+}
+
+func (m *CopyStateInfo) Reset()         { *m = CopyStateInfo{} }
+func (m *CopyStateInfo) String() string { return proto.CompactTextString(m) }
+func (*CopyStateInfo) ProtoMessage()    {}
 
 type RangeQueryState struct {
 	StartKey string `protobuf:"bytes,1,opt,name=startKey" json:"startKey,omitempty"`

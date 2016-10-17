@@ -577,6 +577,61 @@ func (handler *Handler) handleDelState(key string, uuid string) error {
 	return errors.New("Incorrect chaincode message received")
 }
 
+// handleCopyState communicates with the validator to copy all the key-values from sourceChaincodeID to destChaincodeID.
+func (handler *Handler) handleCopyState(sourceChaincodeID, destChaincodeID, uuid string) error {
+	// Check if this is a transaction
+	if !handler.isTransaction[uuid] {
+		return errors.New("Cannot del state in query context")
+	}
+
+	// Send COPY_STATE message to validator chaincode support
+	payload := &pb.CopyStateInfo{Source: sourceChaincodeID, Dest: destChaincodeID}
+	payloadBytes, err := proto.Marshal(payload)
+	if err != nil {
+		return errors.New("Failed to process copy state request")
+	}
+
+	// Create the channel on which to communicate the response from validating peer
+	respChan, uniqueReqErr := handler.createChannel(uuid)
+	if uniqueReqErr != nil {
+		chaincodeLogger.Errorf("[%s]Another state request pending for this Uuid. Cannot process.", shortuuid(uuid))
+		return uniqueReqErr
+	}
+
+	defer handler.deleteChannel(uuid)
+
+	// Send COPY_STATE message to validator chaincode support
+	msg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_COPY_STATE, Payload: payloadBytes, Uuid: uuid}
+	chaincodeLogger.Debugf("[%s]Sending %s", shortuuid(msg.Uuid), pb.ChaincodeMessage_COPY_STATE)
+	if err = handler.serialSend(msg); err != nil {
+		chaincodeLogger.Errorf("[%s]error sending COPY_STATE %s", msg.Uuid, err)
+		return errors.New("could not send msg")
+	}
+
+	// Wait on responseChannel for response
+	responseMsg, ok := handler.receiveChannel(respChan)
+	if !ok {
+		chaincodeLogger.Errorf("[%s]Received unexpected message type", msg.Uuid)
+		return errors.New("Received unexpected message type")
+	}
+
+	if responseMsg.Type.String() == pb.ChaincodeMessage_RESPONSE.String() {
+		// Success response
+		chaincodeLogger.Debugf("[%s]Received %s. Successfully copy state", shortuuid(responseMsg.Uuid), pb.ChaincodeMessage_RESPONSE)
+		return nil
+	}
+
+	if responseMsg.Type.String() == pb.ChaincodeMessage_ERROR.String() {
+		// Error response
+		chaincodeLogger.Errorf("[%s]Received %s. Payload: %s", shortuuid(responseMsg.Uuid), pb.ChaincodeMessage_ERROR, responseMsg.Payload)
+		return errors.New(string(responseMsg.Payload[:]))
+	}
+
+	// Incorrect chaincode message received
+	chaincodeLogger.Errorf("[%s]Incorrect chaincode message %s received. Expecting %s or %s", shortuuid(responseMsg.Uuid), responseMsg.Type, pb.ChaincodeMessage_RESPONSE, pb.ChaincodeMessage_ERROR)
+	return errors.New("Incorrect chaincode message received")
+}
+
 func (handler *Handler) handleRangeQueryState(startKey, endKey string, uuid string) (*pb.RangeQueryStateResponse, error) {
 	// Create the channel on which to communicate the response from validating peer
 	respChan, uniqueReqErr := handler.createChannel(uuid)
