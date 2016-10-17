@@ -8,16 +8,9 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	//	"encoding/hex"
-	//	"encoding/json"
-	//	"errors"
-	//	"fmt"
-	//	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	// chaincode_ecdsa "github.com/hyperledger/fabric/core/chaincode/shim/crypto/ecdsa"
 	"github.com/hyperledger/fabric/examples/chaincode/go/controller/model"
-	_ "github.com/hyperledger/fabric/examples/chaincode/go/util"
 )
 
 const (
@@ -123,18 +116,54 @@ func (t *ControllerChaincode) setDefault(stub *shim.ChaincodeStub, args []string
 	}
 	defaultchaincode := new(model.DefaultChaincode)
 	defaultchaincode.Alias = chaincode.Alias
-	defaultchaincode.Version = chaincode.Version
-	defaultchaincode.Cert = hex.EncodeToString(cert)
-	defaultchaincode.Code = chaincode.Code
-	defaultchaincode.Text = chaincode.Text
-	defaultchaincode.Name = chaincode.Name
-	defaultchaincode.Time = stime
-	defaultchaincode.Extend = chaincode.Extend
+	defaultchaincode, err = defaultchaincode.GetRow(stub)
+	if defaultchaincode == nil {
+		logger.Error("defaultchaincode getrow is nil")
 
-	err = defaultchaincode.Insert(stub)
-	if err != nil {
-		logger.Error("Chaincode register fail:", err)
-		return nil, err
+		defaultchaincode = new(model.DefaultChaincode)
+		defaultchaincode.Alias = chaincode.Alias
+		defaultchaincode.Version = chaincode.Version
+		defaultchaincode.Cert = hex.EncodeToString(cert)
+		defaultchaincode.Code = chaincode.Code
+		defaultchaincode.Text = chaincode.Text
+		defaultchaincode.Name = chaincode.Name
+		defaultchaincode.Time = stime
+		defaultchaincode.Extend = chaincode.Extend
+
+		err = defaultchaincode.Insert(stub)
+		if err != nil {
+			logger.Error("Chaincode register fail:", err)
+			return nil, err
+		}
+	} else {
+		if defaultchaincode.Name == chaincode.Name {
+			return nil, errors.New("chaincode is already default!")
+		}
+
+		beforename := defaultchaincode.Name
+		aftername := chaincode.Name
+		logger.Info("before set defaultname:", beforename)
+		logger.Info("after set defaultname:", aftername)
+
+		err = stub.CopyState(beforename, aftername)
+		if err != nil {
+			logger.Error("Chaincode copy state fail:", err)
+			return nil, err
+		}
+
+		defaultchaincode.Version = chaincode.Version
+		defaultchaincode.Cert = hex.EncodeToString(cert)
+		defaultchaincode.Code = chaincode.Code
+		defaultchaincode.Text = chaincode.Text
+		defaultchaincode.Name = chaincode.Name
+		defaultchaincode.Time = stime
+		defaultchaincode.Extend = chaincode.Extend
+
+		err = defaultchaincode.Update(stub)
+		if err != nil {
+			logger.Error("Chaincode register fail:", err)
+			return nil, err
+		}
 	}
 
 	return nil, nil

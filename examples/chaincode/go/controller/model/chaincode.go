@@ -109,10 +109,10 @@ func (c *Chaincode) Insert(stub *shim.ChaincodeStub) error {
 	fmt.Println(&row)
 	ok, err := stub.InsertRow(const_table_chaincode, row)
 	if err != nil {
-		return fmt.Errorf("Insert row failed. %s", err)
+		return fmt.Errorf("Insert Chaincode failed. %s", err)
 	}
 	if !ok {
-		return errors.New("Insert row failed. Row with given key already exists")
+		return errors.New("Insert Chaincode failed. Chaincode with given key already exists")
 	}
 	return nil
 }
@@ -127,10 +127,10 @@ func (c *Chaincode) Update(stub *shim.ChaincodeStub) error {
 	fmt.Println(&row)
 	ok, err := stub.ReplaceRow(const_table_chaincode, row)
 	if err != nil {
-		return fmt.Errorf("Update row failed. %s", err)
+		return fmt.Errorf("Update Chaincode failed. %s", err)
 	}
 	if !ok {
-		return errors.New("Update row failed. Row with given key not exist")
+		return errors.New("Update Chaincode failed. Chaincode with given key not exist")
 	}
 	return nil
 }
@@ -143,7 +143,7 @@ func (c *Chaincode) IsExist(stub *shim.ChaincodeStub) (bool, error) {
 	}
 	row, err := stub.GetRow(const_table_chaincode, cols)
 	if err != nil {
-		return false, fmt.Errorf("Get table row failed. %s", err)
+		return false, fmt.Errorf("Get Chaincode row failed. %s", err)
 	}
 
 	if len(row.Columns) > 0 {
@@ -161,7 +161,7 @@ func (c *Chaincode) GetRow(stub *shim.ChaincodeStub) (*Chaincode, error) {
 	}
 	row, err := stub.GetRow(const_table_chaincode, cols)
 	if err != nil {
-		return nil, fmt.Errorf("Get table row failed. %s", err)
+		return nil, fmt.Errorf("Get Chaincode row failed. %s", err)
 	}
 
 	chaincode := new(Chaincode)
@@ -177,7 +177,7 @@ func (c *Chaincode) GetRow(stub *shim.ChaincodeStub) (*Chaincode, error) {
 
 		return chaincode, nil
 	} else {
-		return nil, errors.New("Row is nil")
+		return nil, errors.New("Chaincode is nil")
 	}
 }
 
@@ -191,7 +191,7 @@ func (c *Chaincode) GetRowsByAlias(stub *shim.ChaincodeStub, pagesize, pagenum i
 	cols = append(cols, alias)
 	rowChannel, err := stub.GetRows(const_table_chaincode, cols)
 	if err != nil {
-		return nil, fmt.Errorf("Get Table rows failed. %s", err)
+		return nil, fmt.Errorf("Get Chaincode rows failed. %s", err)
 	}
 
 	chaincodes := make([]*Chaincode, 0)
@@ -229,7 +229,7 @@ func (c *Chaincode) GetRowsByAlias(stub *shim.ChaincodeStub, pagesize, pagenum i
 func (c *Chaincode) GetRows(stub *shim.ChaincodeStub, pagesize, pagenum int64) ([]*Chaincode, error) {
 	rowChannel, err := stub.GetRows(const_table_chaincode, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Get Table rows failed. %s", err)
+		return nil, fmt.Errorf("Get Chaincode rows failed. %s", err)
 	}
 
 	chaincodes := make([]*Chaincode, 0)
@@ -271,7 +271,7 @@ func (c *Chaincode) DeleteRow(stub *shim.ChaincodeStub) error {
 	}
 	err = stub.DeleteRow(const_table_chaincode, cols)
 	if err != nil {
-		return fmt.Errorf("Delete row failed. %s", err)
+		return fmt.Errorf("Delete Chaincode row failed. %s", err)
 	}
 	return nil
 }
