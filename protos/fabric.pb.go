@@ -295,6 +295,18 @@ type RZBlock struct {
 	NonHashData       *NonHashData               `protobuf:"bytes,7,opt,name=nonHashData" json:"nonHashData,omitempty"`
 }
 
+type JDBlock struct {
+	Version           uint32                     `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
+	Timestamp         *google_protobuf.Timestamp `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
+	Transactions      []*RZTransaction           `protobuf:"bytes,3,rep,name=transactions" json:"transactions,omitempty"`
+	StateHash         []byte                     `protobuf:"bytes,4,opt,name=stateHash,proto3" json:"stateHash,omitempty"`
+	PreviousBlockHash []byte                     `protobuf:"bytes,5,opt,name=previousBlockHash,proto3" json:"previousBlockHash,omitempty"`
+	ConsensusMetadata []byte                     `protobuf:"bytes,6,opt,name=consensusMetadata,proto3" json:"consensusMetadata,omitempty"`
+	NonHashData       *NonHashData               `protobuf:"bytes,7,opt,name=nonHashData" json:"nonHashData,omitempty"`
+	TotalHeight       uint64                     `protobuf:"bytes,8,opt,name=totalHeight" json:"totalHeight,omitempty"`
+	CurrentBlockNum   uint64                     `protobuf:"bytes,9,opt,name=currentBlockNum" json:"currentBlockNum,omitempty"`
+}
+
 func (m *Block) Reset()         { *m = Block{} }
 func (m *Block) String() string { return proto.CompactTextString(m) }
 func (*Block) ProtoMessage()    {}

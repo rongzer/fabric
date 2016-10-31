@@ -702,6 +702,90 @@ func (s *ServerOpenchainREST) GetRZBlock(rw web.ResponseWriter, req *web.Request
 	}
 }
 
+//JDBlock
+func (s *ServerOpenchainREST) GetJDBlockByNumber(rw web.ResponseWriter, req *web.Request) {
+	// Parse out the Block id
+	id, ok := req.PathParams["id"]
+
+	var blockNumber uint64
+	var err error
+
+	encoder := json.NewEncoder(rw)
+	blockCount, err := s.server.GetBlockCount(context.Background(), &google_protobuf.Empty{})
+	if err != nil {
+		// Failure
+		rw.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(restResult{Error: err.Error()})
+		return
+	}
+	total := blockCount.Count
+	if !ok {
+		blockNumber = total - 1
+	} else {
+		blockNumber, err = strconv.ParseUint(id, 10, 64)
+	}
+
+	// Check for proper Block id syntax
+	if err != nil {
+		// Failure
+		rw.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(restResult{Error: "Block id must be an integer (uint64)."})
+		return
+	}
+
+	// Retrieve Block from blockchain
+	block, err := s.server.GetBlockByNumber(context.Background(), &pb.BlockNumber{Number: blockNumber})
+
+	if (err == ErrNotFound) || (err == nil && block == nil) {
+		rw.WriteHeader(http.StatusNotFound)
+		encoder.Encode(restResult{Error: ErrNotFound.Error()})
+		return
+	}
+
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(restResult{Error: err.Error()})
+		return
+	}
+
+	jdlock := new(pb.JDBlock)
+	jdlock.Version = block.Version
+	jdlock.Timestamp = block.Timestamp
+	jdlock.Version = block.Version
+
+	jdlock.Transactions = make([]*pb.RZTransaction, 0)
+	for _, t := range block.Transactions {
+		rt := new(pb.RZTransaction)
+		rt.Type = t.Type
+
+		proto.Unmarshal(t.ChaincodeID, &rt.ChaincodeID)
+		proto.Unmarshal(t.Payload, &rt.Payload)
+
+		rt.Metadata = t.Metadata
+		rt.Uuid = t.Uuid
+		rt.Timestamp = t.Timestamp
+		rt.ConfidentialityLevel = t.ConfidentialityLevel
+		rt.ConfidentialityProtocolVersion = t.ConfidentialityProtocolVersion
+		rt.Nonce = t.Nonce
+		rt.ToValidators = t.ToValidators
+		rt.Cert = t.Cert
+		rt.Signature = t.Signature
+
+		jdlock.Transactions = append(jdlock.Transactions, rt)
+	}
+
+	jdlock.StateHash = block.StateHash
+	jdlock.PreviousBlockHash = block.PreviousBlockHash
+	jdlock.ConsensusMetadata = block.ConsensusMetadata
+	jdlock.NonHashData = block.NonHashData
+	jdlock.TotalHeight = total
+	jdlock.CurrentBlockNum = blockNumber
+	// Success
+	rw.WriteHeader(http.StatusOK)
+	encoder.Encode(jdlock)
+	restLogger.Info(fmt.Sprintf("Successfully retrieved rzblock by id: %v", blockNumber))
+}
+
 //rongzer
 func (s *ServerOpenchainREST) GetRZBlockByNumber(rw web.ResponseWriter, req *web.Request) {
 	// Parse out the Block id
@@ -1963,6 +2047,8 @@ func buildOpenchainRESTRouter() *web.Router {
 	router.Get("/chain", (*ServerOpenchainREST).GetBlockchainInfo)
 	router.Get("/chain/blocks/:id", (*ServerOpenchainREST).GetBlockByNumber)
 
+	router.Get("/chain/jdblocks", (*ServerOpenchainREST).GetJDBlockByNumber)
+	router.Get("/chain/jdblocks/:id", (*ServerOpenchainREST).GetJDBlockByNumber)
 	//rongzer api
 	router.Get("/chain/rzblocks/id/:id", (*ServerOpenchainREST).GetRZBlockByNumber)
 	router.Get("/chain/rzblocks/uuid/:id", (*ServerOpenchainREST).GetRZBlockByUuid)
